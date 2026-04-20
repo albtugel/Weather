@@ -254,7 +254,7 @@ final class WeatherScreenView: UIView {
         tenDayCard.snp.makeConstraints { make in
             make.top.equalTo(hourlyCard.snp.bottom).offset(12)
             make.leading.trailing.equalToSuperview().inset(16)
-            make.height.equalTo(500)
+            make.height.equalTo(TenDayForecastCard.preferredHeight)
             make.bottom.equalToSuperview().offset(-40)
         }
     }
