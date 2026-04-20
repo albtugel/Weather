@@ -8,7 +8,7 @@ struct WeatherViewState {
     let conditionText: String
     let highLowText: String
     let compactSummaryText: String
-    let currentWeather: MockWeatherData.Current
+    let forecastSummary: String
     let hourlyItems: [MockWeatherData.HourlyWeather]
     let dailyItems: [MockWeatherData.DailyWeather]
 }
