@@ -170,15 +170,6 @@ final class WeatherViewController: UIViewController {
 
         compactSeparator.backgroundColor = UIColor.white.withAlphaComponent(0.3)
 
-        tabBar.onListTap = { [weak self] in
-            let controller = CityListViewController()
-            controller.modalPresentationStyle = .pageSheet
-            if let sheet = controller.sheetPresentationController {
-                sheet.detents = [.large()]
-            }
-            self?.present(controller, animated: true)
-        }
-
         tabBar.onMapTap = { [weak self] in
             self?.mapButtonTapped()
         }
