@@ -4,13 +4,15 @@ import Foundation
 
 final class WeatherViewModel {
 
-    private(set) var viewState: CurrentValueSubject<WeatherViewState, Never>
+    private(set) var screenState: CurrentValueSubject<WeatherScreenState, Never>
 
     private let locationManager: LocationManagerProtocol
     private let getWeatherUseCase: GetWeatherUseCaseProtocol
     private var cancellables = Set<AnyCancellable>()
     private var lastLocation: CLLocation?
     private var latestWeather: Weather?
+    private var latestViewState: WeatherViewState?
+    private var isFetching = false
 
     init(
         locationManager: LocationManagerProtocol = DIContainer.shared.locationManager,
@@ -18,19 +20,37 @@ final class WeatherViewModel {
     ) {
         self.locationManager = locationManager
         self.getWeatherUseCase = getWeatherUseCase
-        
-        let initialState = Self.makeInitialState()
-        self.viewState = CurrentValueSubject<WeatherViewState, Never>(initialState)
-        
+
+        self.screenState = CurrentValueSubject<WeatherScreenState, Never>(.loading)
+
         subscribeToLocationUpdates()
     }
 
     func viewDidLoad() {
+        setLoadingIfNeeded()
         locationManager.requestLocation()
     }
 
     func refreshForCurrentUnit() {
-        viewState.send(Self.makeState(weather: latestWeather))
+        let state = Self.makeState(weather: latestWeather)
+        latestViewState = state
+        screenState.send(.content(state))
+    }
+
+    func refresh() {
+        guard !isFetching else { return }
+
+        if let lastLocation {
+            startFetching(
+                lat: lastLocation.coordinate.latitude,
+                lon: lastLocation.coordinate.longitude,
+                forceRefresh: true
+            )
+            return
+        }
+
+        setLoadingIfNeeded()
+        locationManager.requestLocation()
     }
 
     private func subscribeToLocationUpdates() {
@@ -42,15 +62,20 @@ final class WeatherViewModel {
     }
 
     private func handleLocationStatus(_ status: LocationStatus) {
-        guard case let .authorized(location) = status else { return }
-        guard shouldFetchWeather(for: location) else { return }
-
-        lastLocation = location
-
-        Task { [weak self] in
-            await self?.fetchWeather(
+        switch status {
+        case .notDetermined:
+            setLoadingIfNeeded()
+        case .denied:
+            isFetching = false
+        case .failed:
+            isFetching = false
+        case let .authorized(location):
+            guard shouldFetchWeather(for: location) else { return }
+            lastLocation = location
+            startFetching(
                 lat: location.coordinate.latitude,
-                lon: location.coordinate.longitude
+                lon: location.coordinate.longitude,
+                forceRefresh: false
             )
         }
     }
@@ -60,24 +85,42 @@ final class WeatherViewModel {
         return location.distance(from: lastLocation) >= 50
     }
 
+    private func startFetching(lat: Double, lon: Double, forceRefresh: Bool) {
+        guard !isFetching else { return }
+        isFetching = true
+
+        if forceRefresh, let latestViewState {
+            screenState.send(.refreshing(latestViewState))
+        } else {
+            setLoadingIfNeeded()
+        }
+
+        Task { [weak self] in
+            await self?.fetchWeather(lat: lat, lon: lon)
+        }
+    }
+
     private func fetchWeather(lat: Double, lon: Double) async {
         do {
             let weather = try await getWeatherUseCase.execute(lat: lat, lon: lon)
-
             publish(weather: weather)
         } catch {
-            print("Weather fetch error: \(error)")
+            await MainActor.run {
+                self.isFetching = false
+                if let latestViewState {
+                    self.screenState.send(.content(latestViewState))
+                }
+            }
         }
     }
 
     @MainActor
     private func publish(weather: Weather) {
+        isFetching = false
         latestWeather = weather
-        viewState.send(Self.makeState(weather: weather))
-    }
-
-    private static func makeInitialState() -> WeatherViewState {
-        makeState(weather: nil)
+        let state = Self.makeState(weather: weather)
+        latestViewState = state
+        screenState.send(.content(state))
     }
 
     private static func makeState(weather: Weather?) -> WeatherViewState {
@@ -92,7 +135,7 @@ final class WeatherViewModel {
             conditionText: headerState.conditionText,
             highLowText: headerState.highLowText,
             compactSummaryText: headerState.compactSummaryText,
-            currentWeather: current,
+            forecastSummary: current.forecastSummary,
             hourlyItems: MockWeatherData.hourly,
             dailyItems: MockWeatherData.daily
         )
@@ -132,24 +175,14 @@ final class WeatherViewModel {
             description: weather.description,
             high: Int(weather.tempMax.rounded()),
             low: Int(weather.tempMin.rounded()),
-            humidity: weather.humidity,
-            windSpeed: Int(weather.windSpeed.rounded()),
-            windGust: MockWeatherData.current.windGust,
-            windDirection: MockWeatherData.current.windDirection,
-            feelsLike: Int(weather.temperature.rounded()),
-            uvIndex: MockWeatherData.current.uvIndex,
-            uvDescription: MockWeatherData.current.uvDescription,
-            uvForecast: MockWeatherData.current.uvForecast,
-            visibility: MockWeatherData.current.visibility,
-            pressure: MockWeatherData.current.pressure,
-            pressureTrend: MockWeatherData.current.pressureTrend,
-            sunrise: MockWeatherData.current.sunrise,
-            sunset: MockWeatherData.current.sunset,
             conditionCode: MockWeatherData.current.conditionCode,
-            forecastSummary: MockWeatherData.current.forecastSummary,
-            averageTemp: MockWeatherData.current.averageTemp,
-            averageTempDelta: MockWeatherData.current.averageTempDelta
+            forecastSummary: MockWeatherData.current.forecastSummary
         )
+    }
+
+    private func setLoadingIfNeeded() {
+        guard latestViewState == nil, !isFetching else { return }
+        screenState.send(.loading)
     }
 }
 
