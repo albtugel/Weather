@@ -14,10 +14,7 @@ final class WeatherRepository: WeatherRepositoryProtocol {
             temperature: dto.main.temp,
             tempMin: dto.main.tempMin,
             tempMax: dto.main.tempMax,
-            description: dto.weather.first?.description ?? "",
-            humidity: dto.main.humidity,
-            windSpeed: dto.wind.speed,
-            icon: dto.weather.first?.icon ?? ""
+            description: dto.weather.first?.description ?? ""
         )
     }
 }
@@ -26,17 +23,14 @@ struct WeatherResponseDTO: Decodable {
     let name: String
     let main: Main
     let weather: [WeatherElement]
-    let wind: Wind
 
     struct Main: Decodable {
         let temp: Double
-        let humidity: Int
         let tempMin: Double
         let tempMax: Double
 
         enum CodingKeys: String, CodingKey {
             case temp
-            case humidity
             case tempMin = "temp_min"
             case tempMax = "temp_max"
         }
@@ -44,7 +38,6 @@ struct WeatherResponseDTO: Decodable {
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             temp = try container.decode(Double.self, forKey: .temp)
-            humidity = try container.decode(Int.self, forKey: .humidity)
             tempMin = try container.decodeIfPresent(Double.self, forKey: .tempMin) ?? temp
             tempMax = try container.decodeIfPresent(Double.self, forKey: .tempMax) ?? temp
         }
@@ -52,10 +45,5 @@ struct WeatherResponseDTO: Decodable {
 
     struct WeatherElement: Decodable {
         let description: String
-        let icon: String
-    }
-
-    struct Wind: Decodable {
-        let speed: Double
     }
 }

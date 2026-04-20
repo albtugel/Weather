@@ -4,7 +4,4 @@ struct Weather {
     let tempMin: Double
     let tempMax: Double
     let description: String
-    let humidity: Int
-    let windSpeed: Double
-    let icon: String
 }

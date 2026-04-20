@@ -2,6 +2,8 @@ import UIKit
 import SnapKit
 
 final class TenDayForecastCard: UIView {
+    static let preferredHeight: CGFloat = 477
+
     private let headerIconView = UIImageView()
     private let headerLabel = UILabel()
     private let headerSeparator = UIView()
