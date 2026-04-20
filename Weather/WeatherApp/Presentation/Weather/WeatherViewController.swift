@@ -37,7 +37,7 @@ final class WeatherViewController: UIViewController {
     }
 
     private func bindViewModel() {
-        viewModel.$viewState
+        viewModel.viewState
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
                 self?.screenView.render(state)

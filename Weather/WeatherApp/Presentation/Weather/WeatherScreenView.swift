@@ -54,9 +54,7 @@ final class WeatherScreenView: UIView {
     func render(_ state: WeatherViewState) {
         updateBackground(conditionCode: state.backgroundConditionCode)
         renderHeader(state)
-        hourlyCard.configure(with: state.hourlyItems, summary: state.currentWeather.forecastSummary)
-        tenDayCard.configure(with: state.dailyItems)
-        detailGrid.configure(with: state.currentWeather)
+        renderForecastContent(state)
     }
 
     func updateHeaderProgress(for offset: CGFloat) {
@@ -70,68 +68,26 @@ final class WeatherScreenView: UIView {
         layer.insertSublayer(backgroundLayer, at: 0)
     }
 
-    private func updateBackground(conditionCode: Int) {
-        let background = WeatherBackground.current(conditionCode: conditionCode)
-        backgroundLayer.colors = background.gradientColors
-        backgroundLayer.locations = background.locations
-        backgroundLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
-        backgroundLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
-
-        sunGlowLayer?.removeFromSuperlayer()
-        sunGlowLayer = background.sunGlowLayer(in: bounds)
-        if let sunGlowLayer {
-            layer.insertSublayer(sunGlowLayer, above: backgroundLayer)
-        }
-    }
-
     private func setupViews() {
         backgroundColor = .clear
+        configureScrollView()
+        configureCompactHeader()
+        configureHeaderContent()
+    }
 
+    private func configureScrollView() {
         scrollView.alwaysBounceHorizontal = false
         scrollView.isDirectionalLockEnabled = true
         scrollView.translatesAutoresizingMaskIntoConstraints = false
-
         contentView.translatesAutoresizingMaskIntoConstraints = false
+    }
+
+    private func configureCompactHeader() {
         compactHeaderView.translatesAutoresizingMaskIntoConstraints = false
         compactBlurView.translatesAutoresizingMaskIntoConstraints = false
         compactLocationLabel.translatesAutoresizingMaskIntoConstraints = false
         compactSummaryLabel.translatesAutoresizingMaskIntoConstraints = false
         compactSeparator.translatesAutoresizingMaskIntoConstraints = false
-        headerContainer.translatesAutoresizingMaskIntoConstraints = false
-        hourlyCard.translatesAutoresizingMaskIntoConstraints = false
-        tenDayCard.translatesAutoresizingMaskIntoConstraints = false
-        detailGrid.translatesAutoresizingMaskIntoConstraints = false
-
-        locationIconView.translatesAutoresizingMaskIntoConstraints = false
-        locationTypeLabel.translatesAutoresizingMaskIntoConstraints = false
-        cityLabel.translatesAutoresizingMaskIntoConstraints = false
-        temperatureLabel.translatesAutoresizingMaskIntoConstraints = false
-        conditionLabel.translatesAutoresizingMaskIntoConstraints = false
-        highLowLabel.translatesAutoresizingMaskIntoConstraints = false
-
-        let iconConfig = UIImage.SymbolConfiguration(pointSize: 10, weight: .medium)
-        locationIconView.image = UIImage(systemName: "location.fill", withConfiguration: iconConfig)
-        locationIconView.tintColor = UIColor.white.withAlphaComponent(0.7)
-
-        locationTypeLabel.font = .systemFont(ofSize: 12, weight: .medium)
-        locationTypeLabel.textColor = UIColor.white.withAlphaComponent(0.7)
-        locationTypeLabel.textAlignment = .center
-
-        cityLabel.font = .systemFont(ofSize: 36, weight: .regular)
-        cityLabel.textColor = .white
-        cityLabel.textAlignment = .center
-
-        temperatureLabel.font = .systemFont(ofSize: 96, weight: .thin)
-        temperatureLabel.textColor = .white
-        temperatureLabel.textAlignment = .center
-
-        conditionLabel.font = .systemFont(ofSize: 16, weight: .regular)
-        conditionLabel.textColor = .white
-        conditionLabel.textAlignment = .center
-
-        highLowLabel.font = .systemFont(ofSize: 16, weight: .regular)
-        highLowLabel.textColor = UIColor.white.withAlphaComponent(0.8)
-        highLowLabel.textAlignment = .center
 
         compactHeaderView.backgroundColor = .clear
         compactHeaderView.alpha = 0
@@ -151,7 +107,59 @@ final class WeatherScreenView: UIView {
         compactSeparator.backgroundColor = UIColor.white.withAlphaComponent(0.3)
     }
 
+    private func configureHeaderContent() {
+        headerContainer.translatesAutoresizingMaskIntoConstraints = false
+        hourlyCard.translatesAutoresizingMaskIntoConstraints = false
+        tenDayCard.translatesAutoresizingMaskIntoConstraints = false
+        detailGrid.translatesAutoresizingMaskIntoConstraints = false
+
+        locationIconView.translatesAutoresizingMaskIntoConstraints = false
+        locationTypeLabel.translatesAutoresizingMaskIntoConstraints = false
+        cityLabel.translatesAutoresizingMaskIntoConstraints = false
+        temperatureLabel.translatesAutoresizingMaskIntoConstraints = false
+        conditionLabel.translatesAutoresizingMaskIntoConstraints = false
+        highLowLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        configureLocationViews()
+        configureMainLabels()
+    }
+
+    private func configureLocationViews() {
+        let iconConfig = UIImage.SymbolConfiguration(pointSize: 10, weight: .medium)
+        locationIconView.image = UIImage(systemName: "location.fill", withConfiguration: iconConfig)
+        locationIconView.tintColor = UIColor.white.withAlphaComponent(0.7)
+
+        locationTypeLabel.font = .systemFont(ofSize: 12, weight: .medium)
+        locationTypeLabel.textColor = UIColor.white.withAlphaComponent(0.7)
+        locationTypeLabel.textAlignment = .center
+    }
+
+    private func configureMainLabels() {
+        cityLabel.font = .systemFont(ofSize: 36, weight: .regular)
+        cityLabel.textColor = .white
+        cityLabel.textAlignment = .center
+
+        temperatureLabel.font = .systemFont(ofSize: 96, weight: .thin)
+        temperatureLabel.textColor = .white
+        temperatureLabel.textAlignment = .center
+
+        conditionLabel.font = .systemFont(ofSize: 16, weight: .regular)
+        conditionLabel.textColor = .white
+        conditionLabel.textAlignment = .center
+
+        highLowLabel.font = .systemFont(ofSize: 16, weight: .regular)
+        highLowLabel.textColor = UIColor.white.withAlphaComponent(0.8)
+        highLowLabel.textAlignment = .center
+    }
+
     private func setupLayout() {
+        layoutContainers()
+        layoutHeaderSection()
+        layoutForecastSection()
+        layoutCompactHeaderSection()
+    }
+
+    private func layoutContainers() {
         addSubview(scrollView)
         scrollView.addSubview(contentView)
         addSubview(compactHeaderView)
@@ -168,38 +176,14 @@ final class WeatherScreenView: UIView {
             make.edges.equalTo(scrollView.contentLayoutGuide)
             make.width.equalTo(scrollView.frameLayoutGuide)
         }
+    }
 
-        let locationStack = UIStackView(arrangedSubviews: [locationIconView, locationTypeLabel])
-        locationStack.axis = .horizontal
-        locationStack.alignment = .center
-        locationStack.spacing = 8
-        locationStack.translatesAutoresizingMaskIntoConstraints = false
-
-        fullHeaderStack.axis = .vertical
-        fullHeaderStack.alignment = .center
-        fullHeaderStack.spacing = 0
-        fullHeaderStack.translatesAutoresizingMaskIntoConstraints = false
-        fullHeaderStack.alpha = 1
-
-        fullHeaderStack.addArrangedSubview(locationStack)
-        fullHeaderStack.addArrangedSubview(cityLabel)
-        fullHeaderStack.addArrangedSubview(temperatureLabel)
-        fullHeaderStack.addArrangedSubview(conditionLabel)
-        fullHeaderStack.addArrangedSubview(highLowLabel)
-
-        let spacer = UIView()
-        spacer.translatesAutoresizingMaskIntoConstraints = false
-        spacer.snp.makeConstraints { make in
-            make.height.equalTo(40)
-        }
-        fullHeaderStack.addArrangedSubview(spacer)
-        fullHeaderStack.setCustomSpacing(2, after: conditionLabel)
+    private func layoutHeaderSection() {
+        let locationStack = makeLocationStack()
+        configureFullHeaderStack(with: locationStack)
 
         contentView.addSubview(headerContainer)
         headerContainer.addSubview(fullHeaderStack)
-        contentView.addSubview(hourlyCard)
-        contentView.addSubview(tenDayCard)
-        contentView.addSubview(detailGrid)
 
         locationStack.snp.makeConstraints { make in
             make.height.equalTo(24)
@@ -220,6 +204,12 @@ final class WeatherScreenView: UIView {
             make.leading.greaterThanOrEqualToSuperview().offset(24)
             make.trailing.lessThanOrEqualToSuperview().offset(-24)
         }
+    }
+
+    private func layoutForecastSection() {
+        contentView.addSubview(hourlyCard)
+        contentView.addSubview(tenDayCard)
+        contentView.addSubview(detailGrid)
 
         hourlyCard.snp.makeConstraints { make in
             make.top.equalTo(headerContainer.snp.bottom).offset(20)
@@ -239,7 +229,9 @@ final class WeatherScreenView: UIView {
             make.bottom.equalToSuperview().offset(-40)
             make.height.greaterThanOrEqualTo(636)
         }
+    }
 
+    private func layoutCompactHeaderSection() {
         compactHeaderView.snp.makeConstraints { make in
             make.top.leading.trailing.equalToSuperview()
             compactHeaderHeightConstraint = make.height.equalTo(44 + safeAreaInsets.top).constraint
@@ -265,6 +257,51 @@ final class WeatherScreenView: UIView {
         }
     }
 
+    private func makeLocationStack() -> UIStackView {
+        let stack = UIStackView(arrangedSubviews: [locationIconView, locationTypeLabel])
+        stack.axis = .horizontal
+        stack.alignment = .center
+        stack.spacing = 8
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
+    }
+
+    private func configureFullHeaderStack(with locationStack: UIStackView) {
+        fullHeaderStack.axis = .vertical
+        fullHeaderStack.alignment = .center
+        fullHeaderStack.spacing = 0
+        fullHeaderStack.translatesAutoresizingMaskIntoConstraints = false
+        fullHeaderStack.alpha = 1
+
+        fullHeaderStack.addArrangedSubview(locationStack)
+        fullHeaderStack.addArrangedSubview(cityLabel)
+        fullHeaderStack.addArrangedSubview(temperatureLabel)
+        fullHeaderStack.addArrangedSubview(conditionLabel)
+        fullHeaderStack.addArrangedSubview(highLowLabel)
+
+        let spacer = UIView()
+        spacer.translatesAutoresizingMaskIntoConstraints = false
+        spacer.snp.makeConstraints { make in
+            make.height.equalTo(40)
+        }
+        fullHeaderStack.addArrangedSubview(spacer)
+        fullHeaderStack.setCustomSpacing(2, after: conditionLabel)
+    }
+
+    private func updateBackground(conditionCode: Int) {
+        let background = WeatherBackground.current(conditionCode: conditionCode)
+        backgroundLayer.colors = background.gradientColors
+        backgroundLayer.locations = background.locations
+        backgroundLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
+        backgroundLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
+
+        sunGlowLayer?.removeFromSuperlayer()
+        sunGlowLayer = background.sunGlowLayer(in: bounds)
+        if let sunGlowLayer {
+            layer.insertSublayer(sunGlowLayer, above: backgroundLayer)
+        }
+    }
+
     private func renderHeader(_ state: WeatherViewState) {
         let locationAttributes: [NSAttributedString.Key: Any] = [.kern: 2.0]
         locationTypeLabel.attributedText = NSAttributedString(string: state.locationText, attributes: locationAttributes)
@@ -274,5 +311,11 @@ final class WeatherScreenView: UIView {
         conditionLabel.text = state.conditionText
         highLowLabel.text = state.highLowText
         compactSummaryLabel.text = state.compactSummaryText
+    }
+
+    private func renderForecastContent(_ state: WeatherViewState) {
+        hourlyCard.configure(with: state.hourlyItems, summary: state.currentWeather.forecastSummary)
+        tenDayCard.configure(with: state.dailyItems)
+        detailGrid.configure(with: state.currentWeather)
     }
 }
