@@ -2,6 +2,9 @@ import UIKit
 import SnapKit
 
 final class TenDayForecastRowView: UIView {
+    private static let coldColor = UIColor(hex: "#63c7ff")
+    private static let warmColor = UIColor(hex: "#ff9f45")
+
     private let dayLabel = UILabel()
     private let iconView = UIImageView()
     private let lowLabel = UILabel()
@@ -58,7 +61,8 @@ final class TenDayForecastRowView: UIView {
 
         barFill.layer.cornerRadius = 2
         barFill.clipsToBounds = true
-        barFillGradient.colors = [UIColor(hex: "#4cd964").cgColor, UIColor(hex: "#4cd964").cgColor]
+        barFillGradient.startPoint = CGPoint(x: 0, y: 0.5)
+        barFillGradient.endPoint = CGPoint(x: 1, y: 0.5)
         barFill.layer.addSublayer(barFillGradient)
     }
 
@@ -110,6 +114,33 @@ final class TenDayForecastRowView: UIView {
         CATransaction.setDisableActions(true)
         barFill.frame = CGRect(x: startX, y: trackFrame.minY, width: width, height: trackFrame.height)
         barFillGradient.frame = barFill.bounds
+        barFillGradient.colors = [
+            color(for: startRatio).cgColor,
+            color(for: endRatio).cgColor
+        ]
         CATransaction.commit()
+    }
+
+    private func color(for ratio: CGFloat) -> UIColor {
+        let clampedRatio = min(max(ratio, 0), 1)
+
+        var coldRed: CGFloat = 0
+        var coldGreen: CGFloat = 0
+        var coldBlue: CGFloat = 0
+        var coldAlpha: CGFloat = 0
+        TenDayForecastRowView.coldColor.getRed(&coldRed, green: &coldGreen, blue: &coldBlue, alpha: &coldAlpha)
+
+        var warmRed: CGFloat = 0
+        var warmGreen: CGFloat = 0
+        var warmBlue: CGFloat = 0
+        var warmAlpha: CGFloat = 0
+        TenDayForecastRowView.warmColor.getRed(&warmRed, green: &warmGreen, blue: &warmBlue, alpha: &warmAlpha)
+
+        return UIColor(
+            red: coldRed + (warmRed - coldRed) * clampedRatio,
+            green: coldGreen + (warmGreen - coldGreen) * clampedRatio,
+            blue: coldBlue + (warmBlue - coldBlue) * clampedRatio,
+            alpha: coldAlpha + (warmAlpha - coldAlpha) * clampedRatio
+        )
     }
 }

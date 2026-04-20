@@ -69,18 +69,7 @@ struct MockWeatherData {
         return items
     }()
 
-    static let daily: [DailyWeather] = [
-        .init(day: "Сегодня", icon: "sun.max.fill", low: 5, high: 11),
-        .init(day: "Сб", icon: "cloud.rain.fill", low: 2, high: 9),
-        .init(day: "Вс", icon: "cloud.fill", low: 0, high: 9),
-        .init(day: "Пн", icon: "cloud.fill", low: -2, high: 9),
-        .init(day: "Вт", icon: "cloud.fill", low: -4, high: -1),
-        .init(day: "Ср", icon: "cloud.fill", low: -4, high: 0),
-        .init(day: "Чт", icon: "cloud.rain.fill", low: -4, high: 0),
-        .init(day: "Пт", icon: "cloud.fill", low: -4, high: 1),
-        .init(day: "Сб", icon: "cloud.fill", low: -3, high: 2),
-        .init(day: "Вс", icon: "sun.max.fill", low: -2, high: 2)
-    ]
+    static let daily: [DailyWeather] = makeDailyForecast()
 
     static let cities: [CityWeather] = [
         .init(
@@ -111,4 +100,42 @@ struct MockWeatherData {
             temp: 22
         )
     ]
+
+    private static func makeDailyForecast() -> [DailyWeather] {
+        let templates: [(icon: String, low: Int, high: Int)] = [
+            ("sun.max.fill", 5, 11),
+            ("cloud.rain.fill", 2, 9),
+            ("cloud.fill", 0, 9),
+            ("cloud.fill", -2, 9),
+            ("cloud.fill", -4, -1),
+            ("cloud.fill", -4, 0),
+            ("cloud.rain.fill", -4, 0),
+            ("cloud.fill", -4, 1),
+            ("cloud.fill", -3, 2),
+            ("sun.max.fill", -2, 2)
+        ]
+
+        let calendar = Calendar.current
+        let weekdaySymbols = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
+        let startDate = calendar.startOfDay(for: Date())
+
+        return templates.enumerated().map { index, template in
+            let dayTitle: String
+
+            if index == 0 {
+                dayTitle = "Сегодня"
+            } else {
+                let date = calendar.date(byAdding: .day, value: index, to: startDate) ?? startDate
+                let weekdayIndex = calendar.component(.weekday, from: date) - 1
+                dayTitle = weekdaySymbols[weekdayIndex]
+            }
+
+            return DailyWeather(
+                day: dayTitle,
+                icon: template.icon,
+                low: template.low,
+                high: template.high
+            )
+        }
+    }
 }
