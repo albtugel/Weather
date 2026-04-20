@@ -29,47 +29,51 @@ final class WeatherViewModel {
         locationManager.requestLocation()
     }
 
+    func refreshForCurrentUnit() {
+        viewState.send(Self.makeState(weather: latestWeather))
+    }
+
     private func subscribeToLocationUpdates() {
         locationManager.statusPublisher
             .sink { [weak self] status in
-                guard let self = self else { return }
-                switch status {
-                case .authorized(let location):
-                    if let lastLocation = self.lastLocation, location.distance(from: lastLocation) < 50 {
-                        return
-                    }
-                    self.lastLocation = location
-                    let lat = location.coordinate.latitude
-                    let lon = location.coordinate.longitude
-                    
-                    Task { [weak self] in
-                        await self?.fetchWeather(lat: lat, lon: lon)
-                    }
-                case .denied, .failed, .notDetermined:
-                    break
-                }
+                self?.handleLocationStatus(status)
             }
             .store(in: &cancellables)
     }
 
-    func refreshForCurrentUnit() {
-        let newState = Self.makeState(weather: latestWeather)
+    private func handleLocationStatus(_ status: LocationStatus) {
+        guard case let .authorized(location) = status else { return }
+        guard shouldFetchWeather(for: location) else { return }
 
-        viewState.send(newState)
+        lastLocation = location
+
+        Task { [weak self] in
+            await self?.fetchWeather(
+                lat: location.coordinate.latitude,
+                lon: location.coordinate.longitude
+            )
+        }
+    }
+
+    private func shouldFetchWeather(for location: CLLocation) -> Bool {
+        guard let lastLocation else { return true }
+        return location.distance(from: lastLocation) >= 50
     }
 
     private func fetchWeather(lat: Double, lon: Double) async {
         do {
             let weather = try await getWeatherUseCase.execute(lat: lat, lon: lon)
-            
-            await MainActor.run {
-                self.latestWeather = weather
-                let newState = Self.makeState(weather: weather)
-                self.viewState.send(newState)
-            }
+
+            publish(weather: weather)
         } catch {
             print("Weather fetch error: \(error)")
         }
+    }
+
+    @MainActor
+    private func publish(weather: Weather) {
+        latestWeather = weather
+        viewState.send(Self.makeState(weather: weather))
     }
 
     private static func makeInitialState() -> WeatherViewState {
@@ -78,26 +82,45 @@ final class WeatherViewModel {
 
     private static func makeState(weather: Weather?) -> WeatherViewState {
         let current = makeCurrentWeather(from: weather)
-        let unit = AppSettings.shared.temperatureUnit
-        let temperatureText = weather?.temperature.formatted(unit: unit) ?? Double(current.temperature).formatted(unit: unit)
-        let high = weather?.tempMax.formatted(unit: unit) ?? Double(current.high).formatted(unit: unit)
-        let low = weather?.tempMin.formatted(unit: unit) ?? Double(current.low).formatted(unit: unit)
-        let cityName = weather?.cityName ?? current.cityName
-        let conditionText = weather?.description ?? current.description
-        let compactSummaryText = "\(cityName)  \(temperatureText) | \(conditionText)"
+        let headerState = makeHeaderState(weather: weather, current: current)
 
         return WeatherViewState(
             backgroundConditionCode: current.conditionCode,
             locationText: current.locationType,
-            cityName: cityName,
-            temperatureText: temperatureText,
-            conditionText: conditionText,
-            highLowText: "Макс.: \(high), мин.: \(low)",
-            compactSummaryText: compactSummaryText,
+            cityName: headerState.cityName,
+            temperatureText: headerState.temperatureText,
+            conditionText: headerState.conditionText,
+            highLowText: headerState.highLowText,
+            compactSummaryText: headerState.compactSummaryText,
             currentWeather: current,
             hourlyItems: MockWeatherData.hourly,
             dailyItems: MockWeatherData.daily
         )
+    }
+
+    private static func makeHeaderState(weather: Weather?, current: MockWeatherData.Current) -> HeaderState {
+        let unit = AppSettings.shared.temperatureUnit
+        let cityName = weather?.cityName ?? current.cityName
+        let conditionText = weather?.description ?? current.description
+        let temperatureText = formattedTemperature(weather?.temperature, fallback: current.temperature, unit: unit)
+        let high = formattedTemperature(weather?.tempMax, fallback: current.high, unit: unit)
+        let low = formattedTemperature(weather?.tempMin, fallback: current.low, unit: unit)
+
+        return HeaderState(
+            cityName: cityName,
+            temperatureText: temperatureText,
+            conditionText: conditionText,
+            highLowText: "Макс.: \(high), мин.: \(low)",
+            compactSummaryText: "\(cityName)  \(temperatureText) | \(conditionText)"
+        )
+    }
+
+    private static func formattedTemperature(_ value: Double?, fallback: Int, unit: TemperatureUnit) -> String {
+        if let value {
+            return value.formatted(unit: unit)
+        }
+
+        return Double(fallback).formatted(unit: unit)
     }
 
     private static func makeCurrentWeather(from weather: Weather?) -> MockWeatherData.Current {
@@ -127,5 +150,15 @@ final class WeatherViewModel {
             averageTemp: MockWeatherData.current.averageTemp,
             averageTempDelta: MockWeatherData.current.averageTempDelta
         )
+    }
+}
+
+private extension WeatherViewModel {
+    struct HeaderState {
+        let cityName: String
+        let temperatureText: String
+        let conditionText: String
+        let highLowText: String
+        let compactSummaryText: String
     }
 }
