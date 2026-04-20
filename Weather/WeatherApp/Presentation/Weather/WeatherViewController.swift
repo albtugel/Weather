@@ -9,8 +9,6 @@ final class WeatherViewController: UIViewController {
     private var cancellables = Set<AnyCancellable>()
     private let scrollView = UIScrollView()
     private let contentView = UIView()
-    private let tabBar = WeatherTabBar()
-    private var tabBarHeightConstraint: Constraint?
 
     private let compactHeaderView = UIView()
     private let compactBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
@@ -56,8 +54,6 @@ final class WeatherViewController: UIViewController {
         super.viewDidLayoutSubviews()
         backgroundLayer.frame = view.bounds
         sunGlowLayer?.frame = view.bounds
-        let height = 49 + view.safeAreaInsets.bottom
-        tabBarHeightConstraint?.update(offset: height)
         compactHeaderHeightConstraint?.update(offset: 44 + view.safeAreaInsets.top)
         compactLocationTopConstraint?.update(offset: view.safeAreaInsets.top + 8)
     }
@@ -73,11 +69,6 @@ final class WeatherViewController: UIViewController {
 
     override var preferredStatusBarStyle: UIStatusBarStyle {
         .lightContent
-    }
-
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        print("scrollView.contentSize: \(scrollView.contentSize)")
     }
 
     private func setupBackground() {
@@ -102,7 +93,6 @@ final class WeatherViewController: UIViewController {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.delegate = self
         contentView.translatesAutoresizingMaskIntoConstraints = false
-        tabBar.translatesAutoresizingMaskIntoConstraints = false
         compactHeaderView.translatesAutoresizingMaskIntoConstraints = false
         compactBlurView.translatesAutoresizingMaskIntoConstraints = false
         compactLocationLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -170,9 +160,6 @@ final class WeatherViewController: UIViewController {
 
         compactSeparator.backgroundColor = UIColor.white.withAlphaComponent(0.3)
 
-        tabBar.onMapTap = { [weak self] in
-            self?.mapButtonTapped()
-        }
     }
 
     private func bindViewModel() {
@@ -213,7 +200,6 @@ final class WeatherViewController: UIViewController {
     private func setupLayout() {
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
-        view.addSubview(tabBar)
         view.addSubview(compactHeaderView)
         compactHeaderView.addSubview(compactBlurView)
         compactHeaderView.addSubview(compactLocationLabel)
@@ -302,11 +288,6 @@ final class WeatherViewController: UIViewController {
             make.height.greaterThanOrEqualTo(636)
         }
 
-        tabBar.snp.makeConstraints { make in
-            make.leading.trailing.bottom.equalToSuperview()
-            tabBarHeightConstraint = make.height.equalTo(49 + view.safeAreaInsets.bottom).constraint
-        }
-
         compactHeaderView.snp.makeConstraints { make in
             make.top.leading.trailing.equalToSuperview()
             compactHeaderHeightConstraint = make.height.equalTo(44 + view.safeAreaInsets.top).constraint
@@ -351,13 +332,6 @@ final class WeatherViewController: UIViewController {
             compactSummaryLabel.text = "\(mockWeather.cityName)  \(tempText) | \(mockWeather.description)"
         }
         configureCards()
-    }
-
-    @objc private func mapButtonTapped() {
-        guard let url = URL(string: "maps://") else { return }
-        if UIApplication.shared.canOpenURL(url) {
-            UIApplication.shared.open(url)
-        }
     }
 }
 
