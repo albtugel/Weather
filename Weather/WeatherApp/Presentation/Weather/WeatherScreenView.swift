@@ -5,6 +5,8 @@ final class WeatherScreenView: UIView {
     let scrollView = UIScrollView()
 
     private let contentView = UIView()
+    private let loadingView = UIView()
+    private let loadingIndicator = UIActivityIndicatorView(style: .large)
     private let compactHeaderView = UIView()
     private let compactBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
     private let compactLocationLabel = UILabel()
@@ -57,6 +59,20 @@ final class WeatherScreenView: UIView {
         renderForecastContent(state)
     }
 
+    func showLoading() {
+        showLoadingOverlay(true)
+    }
+
+    func showContent(_ state: WeatherViewState) {
+        render(state)
+        showLoadingOverlay(false)
+    }
+
+    func showRefreshing(_ state: WeatherViewState) {
+        render(state)
+        showLoadingOverlay(false)
+    }
+
     func updateHeaderProgress(for offset: CGFloat) {
         let progress = min(1, max(0, (offset - 60) / 60))
         fullHeaderStack.alpha = 1 - progress
@@ -71,6 +87,7 @@ final class WeatherScreenView: UIView {
     private func setupViews() {
         backgroundColor = .clear
         configureScrollView()
+        configureStateViews()
         configureCompactHeader()
         configureHeaderContent()
     }
@@ -80,6 +97,16 @@ final class WeatherScreenView: UIView {
         scrollView.isDirectionalLockEnabled = true
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
+    }
+
+    private func configureStateViews() {
+        loadingView.translatesAutoresizingMaskIntoConstraints = false
+        loadingView.backgroundColor = UIColor.black.withAlphaComponent(0.12)
+        loadingView.isHidden = true
+
+        loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
+        loadingIndicator.color = .white
+        loadingIndicator.hidesWhenStopped = true
     }
 
     private func configureCompactHeader() {
@@ -163,6 +190,8 @@ final class WeatherScreenView: UIView {
         addSubview(scrollView)
         scrollView.addSubview(contentView)
         addSubview(compactHeaderView)
+        addSubview(loadingView)
+        loadingView.addSubview(loadingIndicator)
         compactHeaderView.addSubview(compactBlurView)
         compactHeaderView.addSubview(compactLocationLabel)
         compactHeaderView.addSubview(compactSummaryLabel)
@@ -175,6 +204,14 @@ final class WeatherScreenView: UIView {
         contentView.snp.makeConstraints { make in
             make.edges.equalTo(scrollView.contentLayoutGuide)
             make.width.equalTo(scrollView.frameLayoutGuide)
+        }
+
+        loadingView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+
+        loadingIndicator.snp.makeConstraints { make in
+            make.center.equalToSuperview()
         }
     }
 
@@ -317,5 +354,17 @@ final class WeatherScreenView: UIView {
         hourlyCard.configure(with: state.hourlyItems, summary: state.currentWeather.forecastSummary)
         tenDayCard.configure(with: state.dailyItems)
         detailGrid.configure(with: state.currentWeather)
+    }
+
+    private func showLoadingOverlay(_ isLoading: Bool) {
+        loadingView.isHidden = !isLoading
+        scrollView.isHidden = isLoading
+        compactHeaderView.isHidden = isLoading
+
+        if isLoading {
+            loadingIndicator.startAnimating()
+        } else {
+            loadingIndicator.stopAnimating()
+        }
     }
 }
