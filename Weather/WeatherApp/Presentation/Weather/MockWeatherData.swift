@@ -8,23 +8,8 @@ struct MockWeatherData {
         let description: String
         let high: Int
         let low: Int
-        let humidity: Int
-        let windSpeed: Int
-        let windGust: Int
-        let windDirection: String
-        let feelsLike: Int
-        let uvIndex: Int
-        let uvDescription: String
-        let uvForecast: String
-        let visibility: Int
-        let pressure: Int
-        let pressureTrend: String
-        let sunrise: Date
-        let sunset: Date
         let conditionCode: Int
         let forecastSummary: String
-        let averageTemp: Int
-        let averageTempDelta: String
     }
 
     struct HourlyWeather {
@@ -58,23 +43,8 @@ struct MockWeatherData {
         description: "В основном солнечно",
         high: 11,
         low: 5,
-        humidity: 70,
-        windSpeed: 6,
-        windGust: 14,
-        windDirection: "СВ 38°",
-        feelsLike: 12,
-        uvIndex: 0,
-        uvDescription: "Низкий",
-        uvForecast: "Останется низким до конца дня.",
-        visibility: 24,
-        pressure: 1022,
-        pressureTrend: "falling",
-        sunrise: today(hour: 6, minute: 41),
-        sunset: today(hour: 17, minute: 29),
         conditionCode: 801,
-        forecastSummary: "Порывы ветра до 14 км/ч. Солнечно до конца дня.",
-        averageTemp: 10,
-        averageTempDelta: "+10° выше среднесуточного максимума"
+        forecastSummary: "Солнечно до конца дня."
     )
 
     static let hourly: [HourlyWeather] = {
@@ -99,18 +69,7 @@ struct MockWeatherData {
         return items
     }()
 
-    static let daily: [DailyWeather] = [
-        .init(day: "Сегодня", icon: "sun.max.fill", low: 5, high: 11),
-        .init(day: "Сб", icon: "cloud.rain.fill", low: 2, high: 9),
-        .init(day: "Вс", icon: "cloud.fill", low: 0, high: 9),
-        .init(day: "Пн", icon: "cloud.fill", low: -2, high: 9),
-        .init(day: "Вт", icon: "cloud.fill", low: -4, high: -1),
-        .init(day: "Ср", icon: "cloud.fill", low: -4, high: 0),
-        .init(day: "Чт", icon: "cloud.rain.fill", low: -4, high: 0),
-        .init(day: "Пт", icon: "cloud.fill", low: -4, high: 1),
-        .init(day: "Сб", icon: "cloud.fill", low: -3, high: 2),
-        .init(day: "Вс", icon: "sun.max.fill", low: -2, high: 2)
-    ]
+    static let daily: [DailyWeather] = makeDailyForecast()
 
     static let cities: [CityWeather] = [
         .init(
@@ -142,10 +101,41 @@ struct MockWeatherData {
         )
     ]
 
-    private static func today(hour: Int, minute: Int) -> Date {
-        var components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
-        components.hour = hour
-        components.minute = minute
-        return Calendar.current.date(from: components) ?? Date()
+    private static func makeDailyForecast() -> [DailyWeather] {
+        let templates: [(icon: String, low: Int, high: Int)] = [
+            ("sun.max.fill", 5, 11),
+            ("cloud.rain.fill", 2, 9),
+            ("cloud.fill", 0, 9),
+            ("cloud.fill", -2, 9),
+            ("cloud.fill", -4, -1),
+            ("cloud.fill", -4, 0),
+            ("cloud.rain.fill", -4, 0),
+            ("cloud.fill", -4, 1),
+            ("cloud.fill", -3, 2),
+            ("sun.max.fill", -2, 2)
+        ]
+
+        let calendar = Calendar.current
+        let weekdaySymbols = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
+        let startDate = calendar.startOfDay(for: Date())
+
+        return templates.enumerated().map { index, template in
+            let dayTitle: String
+
+            if index == 0 {
+                dayTitle = "Сегодня"
+            } else {
+                let date = calendar.date(byAdding: .day, value: index, to: startDate) ?? startDate
+                let weekdayIndex = calendar.component(.weekday, from: date) - 1
+                dayTitle = weekdaySymbols[weekdayIndex]
+            }
+
+            return DailyWeather(
+                day: dayTitle,
+                icon: template.icon,
+                low: template.low,
+                high: template.high
+            )
+        }
     }
 }
