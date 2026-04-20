@@ -8,23 +8,8 @@ struct MockWeatherData {
         let description: String
         let high: Int
         let low: Int
-        let humidity: Int
-        let windSpeed: Int
-        let windGust: Int
-        let windDirection: String
-        let feelsLike: Int
-        let uvIndex: Int
-        let uvDescription: String
-        let uvForecast: String
-        let visibility: Int
-        let pressure: Int
-        let pressureTrend: String
-        let sunrise: Date
-        let sunset: Date
         let conditionCode: Int
         let forecastSummary: String
-        let averageTemp: Int
-        let averageTempDelta: String
     }
 
     struct HourlyWeather {
@@ -58,23 +43,8 @@ struct MockWeatherData {
         description: "В основном солнечно",
         high: 11,
         low: 5,
-        humidity: 70,
-        windSpeed: 6,
-        windGust: 14,
-        windDirection: "СВ 38°",
-        feelsLike: 12,
-        uvIndex: 0,
-        uvDescription: "Низкий",
-        uvForecast: "Останется низким до конца дня.",
-        visibility: 24,
-        pressure: 1022,
-        pressureTrend: "falling",
-        sunrise: today(hour: 6, minute: 41),
-        sunset: today(hour: 17, minute: 29),
         conditionCode: 801,
-        forecastSummary: "Порывы ветра до 14 км/ч. Солнечно до конца дня.",
-        averageTemp: 10,
-        averageTempDelta: "+10° выше среднесуточного максимума"
+        forecastSummary: "Солнечно до конца дня."
     )
 
     static let hourly: [HourlyWeather] = {
@@ -141,11 +111,4 @@ struct MockWeatherData {
             temp: 22
         )
     ]
-
-    private static func today(hour: Int, minute: Int) -> Date {
-        var components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
-        components.hour = hour
-        components.minute = minute
-        return Calendar.current.date(from: components) ?? Date()
-    }
 }

@@ -135,7 +135,7 @@ final class WeatherViewModel {
             conditionText: headerState.conditionText,
             highLowText: headerState.highLowText,
             compactSummaryText: headerState.compactSummaryText,
-            currentWeather: current,
+            forecastSummary: current.forecastSummary,
             hourlyItems: MockWeatherData.hourly,
             dailyItems: MockWeatherData.daily
         )
@@ -175,23 +175,8 @@ final class WeatherViewModel {
             description: weather.description,
             high: Int(weather.tempMax.rounded()),
             low: Int(weather.tempMin.rounded()),
-            humidity: weather.humidity,
-            windSpeed: Int(weather.windSpeed.rounded()),
-            windGust: MockWeatherData.current.windGust,
-            windDirection: MockWeatherData.current.windDirection,
-            feelsLike: Int(weather.temperature.rounded()),
-            uvIndex: MockWeatherData.current.uvIndex,
-            uvDescription: MockWeatherData.current.uvDescription,
-            uvForecast: MockWeatherData.current.uvForecast,
-            visibility: MockWeatherData.current.visibility,
-            pressure: MockWeatherData.current.pressure,
-            pressureTrend: MockWeatherData.current.pressureTrend,
-            sunrise: MockWeatherData.current.sunrise,
-            sunset: MockWeatherData.current.sunset,
             conditionCode: MockWeatherData.current.conditionCode,
-            forecastSummary: MockWeatherData.current.forecastSummary,
-            averageTemp: MockWeatherData.current.averageTemp,
-            averageTempDelta: MockWeatherData.current.averageTempDelta
+            forecastSummary: MockWeatherData.current.forecastSummary
         )
     }
 

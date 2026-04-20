@@ -19,7 +19,6 @@ final class WeatherScreenView: UIView {
     private let fullHeaderStack = UIStackView()
     private let hourlyCard = HourlyForecastCard()
     private let tenDayCard = TenDayForecastCard()
-    private let detailGrid = WeatherDetailGridView()
 
     private let locationIconView = UIImageView()
     private let locationTypeLabel = UILabel()
@@ -138,7 +137,6 @@ final class WeatherScreenView: UIView {
         headerContainer.translatesAutoresizingMaskIntoConstraints = false
         hourlyCard.translatesAutoresizingMaskIntoConstraints = false
         tenDayCard.translatesAutoresizingMaskIntoConstraints = false
-        detailGrid.translatesAutoresizingMaskIntoConstraints = false
 
         locationIconView.translatesAutoresizingMaskIntoConstraints = false
         locationTypeLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -246,7 +244,6 @@ final class WeatherScreenView: UIView {
     private func layoutForecastSection() {
         contentView.addSubview(hourlyCard)
         contentView.addSubview(tenDayCard)
-        contentView.addSubview(detailGrid)
 
         hourlyCard.snp.makeConstraints { make in
             make.top.equalTo(headerContainer.snp.bottom).offset(20)
@@ -258,13 +255,7 @@ final class WeatherScreenView: UIView {
             make.top.equalTo(hourlyCard.snp.bottom).offset(12)
             make.leading.trailing.equalToSuperview().inset(16)
             make.height.equalTo(500)
-        }
-
-        detailGrid.snp.makeConstraints { make in
-            make.top.equalTo(tenDayCard.snp.bottom).offset(12)
-            make.leading.trailing.equalToSuperview().inset(16)
             make.bottom.equalToSuperview().offset(-40)
-            make.height.greaterThanOrEqualTo(636)
         }
     }
 
@@ -351,9 +342,8 @@ final class WeatherScreenView: UIView {
     }
 
     private func renderForecastContent(_ state: WeatherViewState) {
-        hourlyCard.configure(with: state.hourlyItems, summary: state.currentWeather.forecastSummary)
+        hourlyCard.configure(with: state.hourlyItems, summary: state.forecastSummary)
         tenDayCard.configure(with: state.dailyItems)
-        detailGrid.configure(with: state.currentWeather)
     }
 
     private func showLoadingOverlay(_ isLoading: Bool) {
