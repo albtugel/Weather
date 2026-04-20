@@ -4,6 +4,7 @@ import Combine
 final class WeatherViewController: UIViewController {
     private let viewModel = WeatherViewModel()
     private let screenView = WeatherScreenView()
+    private let refreshControl = UIRefreshControl()
     private var cancellables = Set<AnyCancellable>()
 
     override func loadView() {
@@ -13,6 +14,7 @@ final class WeatherViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         screenView.scrollView.delegate = self
+        configureRefreshControl()
         bindViewModel()
         viewModel.viewDidLoad()
         NotificationCenter.default.addObserver(
@@ -37,16 +39,39 @@ final class WeatherViewController: UIViewController {
     }
 
     private func bindViewModel() {
-        viewModel.viewState
+        viewModel.screenState
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
-                self?.screenView.render(state)
+                self?.render(state)
             }
             .store(in: &cancellables)
     }
 
     @objc private func temperatureUnitChanged() {
         viewModel.refreshForCurrentUnit()
+    }
+
+    @objc private func handleRefresh() {
+        viewModel.refresh()
+    }
+
+    private func configureRefreshControl() {
+        refreshControl.tintColor = .white
+        refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+        screenView.scrollView.refreshControl = refreshControl
+    }
+
+    private func render(_ state: WeatherScreenState) {
+        switch state {
+        case .loading:
+            refreshControl.endRefreshing()
+            screenView.showLoading()
+        case let .content(viewState):
+            refreshControl.endRefreshing()
+            screenView.showContent(viewState)
+        case let .refreshing(viewState):
+            screenView.showRefreshing(viewState)
+        }
     }
 }
 
