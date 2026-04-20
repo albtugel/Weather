@@ -30,15 +30,4 @@ struct Endpoint {
             ]
         )
     }
-
-    static func airQuality(lat: Double, lon: Double) -> Endpoint {
-        Endpoint(
-            path: "/data/2.5/air_pollution",
-            method: "GET",
-            queryItems: [
-                URLQueryItem(name: "lat", value: String(lat)),
-                URLQueryItem(name: "lon", value: String(lon))
-            ]
-        )
-    }
 }
