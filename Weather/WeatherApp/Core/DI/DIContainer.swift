@@ -13,4 +13,8 @@ final class DIContainer {
 
     lazy var getWeatherUseCase: GetWeatherUseCaseProtocol =
         GetWeatherUseCase(repository: weatherRepository)
+
+    lazy var cityStore = CityStore()
+
+    lazy var cityLookup = CityLookup()
 }
