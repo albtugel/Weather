@@ -20,10 +20,16 @@ final class CityStore {
 
         guard let data = try? JSONEncoder().encode(sorted) else { return }
         userDefaults.set(data, forKey: key)
+        NotificationCenter.default.post(name: .citiesChanged, object: nil)
     }
 
     func upsert(_ city: City) {
         var cities = all()
+
+        if cities.contains(city) {
+            return
+        }
+
         cities.removeAll { $0.id == city.id }
         cities.append(city)
         save(cities)
@@ -36,4 +42,8 @@ final class CityStore {
         cities.removeAll { $0.id == id && !$0.isCurrent }
         save(cities)
     }
+}
+
+extension Notification.Name {
+    static let citiesChanged = Notification.Name("citiesChanged")
 }

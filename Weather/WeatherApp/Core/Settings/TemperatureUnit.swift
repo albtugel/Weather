@@ -8,6 +8,7 @@ enum TemperatureUnit: String {
 extension Double {
     func formatted(unit: TemperatureUnit) -> String {
         let formatter = MeasurementFormatter()
+        formatter.locale = .autoupdatingCurrent
         formatter.unitStyle = .short
         formatter.unitOptions = .temperatureWithoutUnit
         formatter.numberFormatter.maximumFractionDigits = 0
