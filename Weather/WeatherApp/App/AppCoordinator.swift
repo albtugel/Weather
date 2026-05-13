@@ -8,7 +8,7 @@ final class AppCoordinator {
     }
 
     func start() {
-        window.rootViewController = UINavigationController(rootViewController: WeatherViewController())
+        window.rootViewController = UINavigationController(rootViewController: Pager())
         window.makeKeyAndVisible()
     }
 }

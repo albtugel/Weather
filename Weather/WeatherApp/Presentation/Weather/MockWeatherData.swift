@@ -116,18 +116,19 @@ struct MockWeatherData {
         ]
 
         let calendar = Calendar.current
-        let weekdaySymbols = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
+        let formatter = DateFormatter()
+        formatter.locale = .autoupdatingCurrent
+        formatter.setLocalizedDateFormatFromTemplate("EEE")
         let startDate = calendar.startOfDay(for: Date())
 
         return templates.enumerated().map { index, template in
             let dayTitle: String
 
             if index == 0 {
-                dayTitle = "Сегодня"
+                dayTitle = NSLocalizedString("Сегодня", comment: "Today label in ten day forecast")
             } else {
                 let date = calendar.date(byAdding: .day, value: index, to: startDate) ?? startDate
-                let weekdayIndex = calendar.component(.weekday, from: date) - 1
-                dayTitle = weekdaySymbols[weekdayIndex]
+                dayTitle = formatter.string(from: date).capitalized
             }
 
             return DailyWeather(

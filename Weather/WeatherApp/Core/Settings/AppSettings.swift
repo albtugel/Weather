@@ -8,8 +8,7 @@ final class AppSettings {
 
     var temperatureUnit: TemperatureUnit {
         get {
-            let raw = UserDefaults.standard.string(forKey: key) ?? "celsius"
-            return TemperatureUnit(rawValue: raw) ?? .celsius
+            Locale.autoupdatingCurrent.usesMetricSystem ? .celsius : .fahrenheit
         }
         set {
             UserDefaults.standard.set(newValue.rawValue, forKey: key)
