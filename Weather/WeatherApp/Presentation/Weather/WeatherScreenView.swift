@@ -29,6 +29,7 @@ final class WeatherScreenView: UIView {
 
     private let backgroundLayer = CAGradientLayer()
     private var sunGlowLayer: CARadialGradientLayer?
+    private var didShowFirstAppearance = false
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -72,6 +73,22 @@ final class WeatherScreenView: UIView {
         showLoadingOverlay(false)
     }
 
+    func showFirstAppearance() {
+        guard !didShowFirstAppearance else { return }
+        didShowFirstAppearance = true
+
+        let views = [headerContainer, hourlyCard, tenDayCard]
+        views.enumerated().forEach { index, view in
+            view.alpha = 0
+            view.transform = CGAffineTransform(translationX: 0, y: 26)
+
+            UIView.animate(withDuration: 0.42, delay: Double(index) * 0.08, options: [.curveEaseOut]) {
+                view.alpha = 1
+                view.transform = .identity
+            }
+        }
+    }
+
     func updateHeaderProgress(for offset: CGFloat) {
         let progress = min(1, max(0, (offset - 60) / 60))
         fullHeaderStack.alpha = 1 - progress
@@ -94,6 +111,8 @@ final class WeatherScreenView: UIView {
     private func configureScrollView() {
         scrollView.alwaysBounceHorizontal = false
         scrollView.isDirectionalLockEnabled = true
+        scrollView.contentInset.bottom = 70
+        scrollView.verticalScrollIndicatorInsets.bottom = 70
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
     }

@@ -6,10 +6,12 @@ import UIKit
 
 final class CitiesController: UIViewController {
     var onCitySelected: ((City) -> Void)?
+    var onClose: (() -> Void)?
 
     private let backgroundLayer = CAGradientLayer()
     private var sunGlowLayer: CARadialGradientLayer?
     private let titleLabel = UILabel()
+    private let closeButton = UIButton(type: .system)
     private let infoLabel = UILabel()
     private let searchField = SearchField()
     private let tableView = UITableView(frame: .zero, style: .plain)
@@ -63,7 +65,7 @@ final class CitiesController: UIViewController {
 
     private func setupViews() {
         setupBackground(conditionCode: MockWeatherData.current.conditionCode)
-        navigationController?.setNavigationBarHidden(false, animated: false)
+        navigationController?.setNavigationBarHidden(true, animated: false)
         navigationItem.title = ""
         navigationItem.hidesBackButton = true
 
@@ -71,6 +73,11 @@ final class CitiesController: UIViewController {
         titleLabel.font = .systemFont(ofSize: 40, weight: .bold)
         titleLabel.textColor = .white
         titleLabel.textAlignment = .left
+
+        let image = UIImage(systemName: "xmark.circle.fill")
+        closeButton.setImage(image, for: .normal)
+        closeButton.tintColor = UIColor.white.withAlphaComponent(0.82)
+        closeButton.addTarget(self, action: #selector(close), for: .touchUpInside)
 
         infoLabel.font = .systemFont(ofSize: 15, weight: .semibold)
         infoLabel.textColor = UIColor.white.withAlphaComponent(0.46)
@@ -106,6 +113,7 @@ final class CitiesController: UIViewController {
 
     private func setupLayout() {
         view.addSubview(titleLabel)
+        view.addSubview(closeButton)
         view.addSubview(tableView)
         view.addSubview(infoLabel)
         view.addSubview(searchField)
@@ -113,7 +121,13 @@ final class CitiesController: UIViewController {
         titleLabel.snp.makeConstraints { make in
             make.top.equalTo(view.safeAreaLayoutGuide).offset(28)
             make.leading.equalToSuperview().offset(28)
-            make.trailing.equalToSuperview().offset(-28)
+            make.trailing.lessThanOrEqualTo(closeButton.snp.leading).offset(-16)
+        }
+
+        closeButton.snp.makeConstraints { make in
+            make.centerY.equalTo(titleLabel)
+            make.trailing.equalToSuperview().offset(-24)
+            make.size.equalTo(34)
         }
 
         tableView.snp.makeConstraints { make in
@@ -167,6 +181,10 @@ final class CitiesController: UIViewController {
                 self?.reloadCities()
             }
             .store(in: &cancellables)
+    }
+
+    @objc private func close() {
+        onClose?()
     }
 
     private func search(_ text: String) {
@@ -319,8 +337,10 @@ extension CitiesController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         switch rows[indexPath.row] {
         case let .city(card):
+            Haptics.light()
             onCitySelected?(card.city)
         case let .result(result):
+            Haptics.light()
             addCity(from: result)
         case .message:
             break
@@ -347,6 +367,7 @@ extension CitiesController: UITableViewDelegate {
         }
 
         let delete = UIContextualAction(style: .destructive, title: "Удалить") { [weak self] _, _, completion in
+            Haptics.medium()
             self?.store.remove(id: card.city.id)
             self?.reloadCities()
             completion(true)
