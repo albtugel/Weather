@@ -7,12 +7,18 @@ enum TemperatureUnit: String {
 
 extension Double {
     func formatted(unit: TemperatureUnit) -> String {
+        let formatter = MeasurementFormatter()
+        formatter.unitStyle = .short
+        formatter.unitOptions = .temperatureWithoutUnit
+        formatter.numberFormatter.maximumFractionDigits = 0
+
+        let celsius = Measurement(value: self, unit: UnitTemperature.celsius)
+
         switch unit {
         case .celsius:
-            return "\(Int(self.rounded()))°"
+            return formatter.string(from: celsius.converted(to: .celsius))
         case .fahrenheit:
-            let f = self * 9 / 5 + 32
-            return "\(Int(f.rounded()))°"
+            return formatter.string(from: celsius.converted(to: .fahrenheit))
         }
     }
 }

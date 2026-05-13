@@ -12,6 +12,8 @@ final class WeatherViewModel {
     private var lastLocation: CLLocation?
     private var latestWeather: Weather?
     private var latestViewState: WeatherViewState?
+    private var locationText = "ТЕКУЩЕЕ МЕСТО"
+    private var followsCurrentLocation = true
     private var isFetching = false
 
     init(
@@ -32,9 +34,16 @@ final class WeatherViewModel {
     }
 
     func refreshForCurrentUnit() {
-        let state = Self.makeState(weather: latestWeather)
+        let state = makeState(weather: latestWeather)
         latestViewState = state
         screenState.send(.content(state))
+    }
+
+    func loadCity(_ city: City) {
+        followsCurrentLocation = city.isCurrent
+        locationText = city.isCurrent ? "ТЕКУЩЕЕ МЕСТО" : "СОХРАНЕННЫЙ ГОРОД"
+        lastLocation = CLLocation(latitude: city.lat, longitude: city.lon)
+        startFetching(lat: city.lat, lon: city.lon, forceRefresh: true)
     }
 
     func refresh() {
@@ -70,8 +79,10 @@ final class WeatherViewModel {
         case .failed:
             isFetching = false
         case let .authorized(location):
+            guard followsCurrentLocation else { return }
             guard shouldFetchWeather(for: location) else { return }
             lastLocation = location
+            locationText = "ТЕКУЩЕЕ МЕСТО"
             startFetching(
                 lat: location.coordinate.latitude,
                 lon: location.coordinate.longitude,
@@ -118,18 +129,18 @@ final class WeatherViewModel {
     private func publish(weather: Weather) {
         isFetching = false
         latestWeather = weather
-        let state = Self.makeState(weather: weather)
+        let state = makeState(weather: weather)
         latestViewState = state
         screenState.send(.content(state))
     }
 
-    private static func makeState(weather: Weather?) -> WeatherViewState {
+    private func makeState(weather: Weather?) -> WeatherViewState {
         let current = makeCurrentWeather(from: weather)
         let headerState = makeHeaderState(weather: weather, current: current)
 
         return WeatherViewState(
             backgroundConditionCode: current.conditionCode,
-            locationText: current.locationType,
+            locationText: locationText,
             cityName: headerState.cityName,
             temperatureText: headerState.temperatureText,
             conditionText: headerState.conditionText,
@@ -141,7 +152,7 @@ final class WeatherViewModel {
         )
     }
 
-    private static func makeHeaderState(weather: Weather?, current: MockWeatherData.Current) -> HeaderState {
+    private func makeHeaderState(weather: Weather?, current: MockWeatherData.Current) -> HeaderState {
         let unit = AppSettings.shared.temperatureUnit
         let cityName = weather?.cityName ?? current.cityName
         let conditionText = weather?.description ?? current.description
@@ -158,7 +169,7 @@ final class WeatherViewModel {
         )
     }
 
-    private static func formattedTemperature(_ value: Double?, fallback: Int, unit: TemperatureUnit) -> String {
+    private func formattedTemperature(_ value: Double?, fallback: Int, unit: TemperatureUnit) -> String {
         if let value {
             return value.formatted(unit: unit)
         }
@@ -166,11 +177,11 @@ final class WeatherViewModel {
         return Double(fallback).formatted(unit: unit)
     }
 
-    private static func makeCurrentWeather(from weather: Weather?) -> MockWeatherData.Current {
+    private func makeCurrentWeather(from weather: Weather?) -> MockWeatherData.Current {
         guard let weather = weather else { return MockWeatherData.current }
         return MockWeatherData.Current(
             cityName: weather.cityName,
-            locationType: "ТЕКУЩЕЕ МЕСТО",
+            locationType: locationText,
             temperature: Int(weather.temperature.rounded()),
             description: weather.description,
             high: Int(weather.tempMax.rounded()),
