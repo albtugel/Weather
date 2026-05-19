@@ -147,7 +147,8 @@ final class WeatherViewModel {
             compactSummaryText: headerState.compactSummaryText,
             forecastSummary: current.forecastSummary,
             hourlyItems: hourlyItems(from: weather),
-            dailyItems: dailyItems(from: weather)
+            dailyItems: dailyItems(from: weather),
+            detailItems: detailItems(from: weather)
         )
     }
 
@@ -198,6 +199,147 @@ final class WeatherViewModel {
     private func dailyItems(from weather: Weather?) -> [MockWeatherData.DailyWeather] {
         guard let weather else { return MockWeatherData.daily }
         return MockWeatherData.daily(from: weather.daily, timezoneOffset: weather.timezoneOffset)
+    }
+
+    private func detailItems(from weather: Weather?) -> [WeatherDetailItem] {
+        let weather = weather ?? .mock
+        let unit = AppSettings.shared.temperatureUnit
+        let average = (weather.tempMin + weather.tempMax) / 2
+        let high = formattedTemperature(weather.tempMax, fallback: Int(weather.tempMax.rounded()), unit: unit)
+        let current = formattedTemperature(weather.temperature, fallback: Int(weather.temperature.rounded()), unit: unit)
+        let diff = abs(weather.temperature - average)
+
+        return [
+            WeatherDetailItem(
+                title: "В среднем",
+                value: "На \(diff.formatted(unit: unit))",
+                subtitle: weather.temperature >= average
+                    ? "> среднесуточного максимума"
+                    : "< среднесуточного максимума",
+                icon: "chart.line.uptrend.xyaxis",
+                note: "Сегодня \(current)\nМакс.: \(high)"
+            ),
+            WeatherDetailItem(
+                title: "Ощущается как",
+                value: formattedTemperature(weather.feelsLike, fallback: Int(weather.temperature.rounded()), unit: unit),
+                subtitle: feelsLikeSubtitle(weather.feelsLike, temperature: weather.temperature),
+                icon: "thermometer.medium"
+            ),
+            WeatherDetailItem(
+                title: "Ветер",
+                value: "",
+                icon: "wind",
+                kind: .wind,
+                rows: [
+                    WeatherDetailRow(title: "Ветер", value: formattedWind(weather.windSpeed)),
+                    WeatherDetailRow(title: "Порывы ветра", value: formattedWind(weather.windGust)),
+                    WeatherDetailRow(title: "Направление", value: formattedWindDirection(weather.windDeg))
+                ]
+            ),
+            WeatherDetailItem(
+                title: "УФ-индекс",
+                value: formattedUVIndex(weather.uvIndex),
+                subtitle: uvSubtitle(weather.uvIndex),
+                icon: "sun.max.fill",
+                kind: .uv,
+                note: uvNote(weather.uvIndex)
+            ),
+            WeatherDetailItem(
+                title: "Закат",
+                value: formattedTime(weather.sunset, timezoneOffset: weather.timezoneOffset),
+                icon: "sunset.fill",
+                note: "Восход в \(formattedTime(weather.sunrise, timezoneOffset: weather.timezoneOffset))."
+            ),
+            WeatherDetailItem(
+                title: "Влажность",
+                value: formattedPercent(weather.humidity),
+                icon: "humidity.fill",
+                note: dewPointText(weather)
+            ),
+            WeatherDetailItem(
+                title: "Давление",
+                value: formattedPressure(weather.pressure),
+                icon: "gauge.medium",
+                note: "↓ гПа"
+            )
+        ]
+    }
+
+    private func formattedWind(_ speed: Double?) -> String {
+        guard let speed else { return "--" }
+        return "\(Int((speed * 3.6).rounded())) км/ч"
+    }
+
+    private func windDirection(from degrees: Int) -> String {
+        let directions = ["С", "СВ", "В", "ЮВ", "Ю", "ЮЗ", "З", "СЗ"]
+        let index = Int((Double(degrees) / 45.0).rounded()) % directions.count
+        return directions[index]
+    }
+
+    private func formattedWindDirection(_ degrees: Int?) -> String {
+        guard let degrees else { return "--" }
+        return "\(degrees)° \(windDirection(from: degrees))"
+    }
+
+    private func formattedPercent(_ value: Int?) -> String {
+        guard let value else { return "--" }
+        return "\(value) %"
+    }
+
+    private func feelsLikeSubtitle(_ feelsLike: Double?, temperature: Double) -> String? {
+        guard let feelsLike else { return nil }
+        let diff = abs(feelsLike - temperature)
+        if diff < 1 {
+            return "Похоже на фактическую."
+        }
+
+        return feelsLike > temperature
+            ? "По ощущениям теплее, чем на самом деле."
+            : "По ощущениям прохладнее, чем на самом деле."
+    }
+
+    private func formattedPressure(_ pressure: Int?) -> String {
+        guard let pressure else { return "--" }
+        let formatter = NumberFormatter()
+        formatter.groupingSeparator = " "
+        formatter.usesGroupingSeparator = true
+        return formatter.string(from: NSNumber(value: pressure)) ?? "\(pressure)"
+    }
+
+    private func formattedTime(_ date: Date?, timezoneOffset: Int?) -> String {
+        guard let date else { return "--" }
+        let formatter = DateFormatter()
+        formatter.locale = .autoupdatingCurrent
+        formatter.dateFormat = "HH:mm"
+        formatter.timeZone = timezoneOffset.flatMap(TimeZone.init(secondsFromGMT:)) ?? .autoupdatingCurrent
+        return formatter.string(from: date)
+    }
+
+    private func formattedUVIndex(_ uvIndex: Double?) -> String {
+        guard let uvIndex else { return "--" }
+        return "\(Int(uvIndex.rounded()))"
+    }
+
+    private func uvSubtitle(_ uvIndex: Double?) -> String? {
+        guard let uvIndex else { return nil }
+        switch uvIndex {
+        case 0..<3: return "Низкий"
+        case 3..<6: return "Средний"
+        case 6..<8: return "Высокий"
+        default: return "Очень высокий"
+        }
+    }
+
+    private func uvNote(_ uvIndex: Double?) -> String? {
+        guard let level = uvSubtitle(uvIndex)?.lowercased() else { return nil }
+        return "Останется \(level) до конца дня."
+    }
+
+    private func dewPointText(_ weather: Weather) -> String? {
+        guard let humidity = weather.humidity else { return nil }
+        let dewPoint = weather.temperature - Double(100 - humidity) / 5
+        let value = formattedTemperature(dewPoint, fallback: Int(dewPoint.rounded()), unit: AppSettings.shared.temperatureUnit)
+        return "Точка росы сейчас: \(value)."
     }
 
     private func setLoadingIfNeeded() {

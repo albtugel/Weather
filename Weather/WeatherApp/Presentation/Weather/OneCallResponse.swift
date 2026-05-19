@@ -25,14 +25,19 @@ struct OneCallResponse: Decodable {
         let windSpeed: Double?
         let windDeg: Int?
         let windGust: Double?
+        let visibility: Int?
+        let uvIndex: Double?
+        let cloudiness: Int?
         let weather: [Condition]
 
         enum CodingKeys: String, CodingKey {
-            case dt, sunrise, sunset, temp, pressure, humidity, weather
+            case dt, sunrise, sunset, temp, pressure, humidity, visibility, weather
             case feelsLike = "feels_like"
             case windSpeed = "wind_speed"
             case windDeg = "wind_deg"
             case windGust = "wind_gust"
+            case uvIndex = "uvi"
+            case cloudiness = "clouds"
         }
     }
 
