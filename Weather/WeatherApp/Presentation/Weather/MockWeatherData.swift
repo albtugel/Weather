@@ -1,32 +1,33 @@
 import Foundation
 
 struct MockWeatherData {
+    
     struct Current {
-        let cityName: String
+        let city: String
         let locationType: String
-        let temperature: Int
-        let description: String
+        let temp: Int
+        let desc: String
         let high: Int
         let low: Int
         let conditionCode: Int
-        let forecastSummary: String
+        let summary: String
     }
-
-    struct HourlyWeather {
+    
+    struct Hourly {
         let label: String
         let temp: Int?
         let icon: String
         let isSunset: Bool
     }
-
-    struct DailyWeather {
+    
+    struct Daily {
         let day: String
         let icon: String
         let low: Int
         let high: Int
     }
-
-    struct CityWeather {
+    
+    struct City {
         let name: String
         let type: String?
         let time: String?
@@ -35,74 +36,71 @@ struct MockWeatherData {
         let low: Int
         let temp: Int
     }
-
+    
     static let current = Current(
-        cityName: "Алматы",
+        city: "Алматы",
         locationType: "ТЕКУЩЕЕ МЕСТО",
-        temperature: 11,
-        description: "В основном солнечно",
+        temp: 11,
+        desc: "В основном солнечно",
         high: 11,
         low: 5,
         conditionCode: 801,
-        forecastSummary: "Солнечно до конца дня."
+        summary: "Солнечно до конца дня."
     )
-
-    static let hourly: [HourlyWeather] = {
-        var items: [HourlyWeather] = [
-            .init(label: "Сейчас", temp: 11, icon: "sun.max.fill", isSunset: false),
-            .init(label: "16", temp: 10, icon: "sun.max.fill", isSunset: false),
-            .init(label: "17", temp: 9, icon: "sun.max.fill", isSunset: false),
-            .init(label: "17:29", temp: nil, icon: "sunset.fill", isSunset: true),
-            .init(label: "18", temp: 8, icon: "moon.fill", isSunset: false),
-            .init(label: "19", temp: 7, icon: "moon.fill", isSunset: false)
-        ]
-
-        let additionalLabels = [
-            "20", "21", "22", "23",
-            "00", "01", "02", "03", "04", "05",
-            "06", "07", "08", "09", "10", "11", "12", "13"
-        ]
-        for label in additionalLabels {
-            items.append(.init(label: label, temp: 7, icon: "moon.fill", isSunset: false))
-        }
-
-        return items
-    }()
-
-    static let daily: [DailyWeather] = makeDailyForecast()
-
-    static let cities: [CityWeather] = [
-        .init(
-            name: "Алматы",
-            type: "Текущее место",
-            time: nil,
-            condition: "В основном солнечно",
-            high: 11,
-            low: 5,
-            temp: 11
-        ),
-        .init(
-            name: "Астана",
-            type: nil,
-            time: "15:58",
-            condition: "В основном облачно",
-            high: -10,
-            low: -22,
-            temp: -10
-        ),
-        .init(
-            name: "Алматы",
-            type: nil,
-            time: "15:58",
-            condition: "В основном солнечно",
-            high: 22,
-            low: 8,
-            temp: 22
-        )
+    
+    static let hourly: [Hourly] = makeHourly()
+    static let daily: [Daily] = makeDaily()
+    
+    static let cities: [City] = [
+        City(name: "Алматы", type: "Текущее место", time: nil,
+             condition: "В основном солнечно", high: 11, low: 5, temp: 11),
+        
+        City(name: "Астана", type: nil, time: currentTime(),
+             condition: "В основном облачно", high: -10, low: -22, temp: -10),
+        
+        City(name: "Алматы", type: nil, time: currentTime(),
+             condition: "В основном солнечно", high: 22, low: 8, temp: 22)
     ]
-
-    private static func makeDailyForecast() -> [DailyWeather] {
-        let templates: [(icon: String, low: Int, high: Int)] = [
+    
+    private static func currentTime() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: Date())
+    }
+    
+    private static func makeHourly() -> [Hourly] {
+        let now = Date()
+        let calendar = Calendar.current
+        
+        var items: [Hourly] = [
+            Hourly(label: "Сейчас", temp: 11, icon: "sun.max.fill", isSunset: false)
+        ]
+        
+        for hour in 1...15 {
+            let date = calendar.date(byAdding: .hour, value: hour, to: now) ?? now
+            let hourString = String(calendar.component(.hour, from: date))
+            
+            items.append(Hourly(
+                label: hourString,
+                temp: 10 - hour/3,
+                icon: hour >= 18 ? "moon.fill" : "sun.max.fill",
+                isSunset: false
+            ))
+        }
+        
+        items.insert(Hourly(label: "17:29", temp: nil, icon: "sunset.fill", isSunset: true), at: 3)
+        
+        return items
+    }
+    
+    private static func makeDaily() -> [Daily] {
+        let calendar = Calendar.current
+        let formatter = DateFormatter()
+        formatter.locale = .autoupdatingCurrent
+        formatter.setLocalizedDateFormatFromTemplate("EEE")
+        
+        let startDate = calendar.startOfDay(for: Date())
+        let templates = [
             ("sun.max.fill", 5, 11),
             ("cloud.rain.fill", 2, 9),
             ("cloud.fill", 0, 9),
@@ -114,29 +112,13 @@ struct MockWeatherData {
             ("cloud.fill", -3, 2),
             ("sun.max.fill", -2, 2)
         ]
-
-        let calendar = Calendar.current
-        let formatter = DateFormatter()
-        formatter.locale = .autoupdatingCurrent
-        formatter.setLocalizedDateFormatFromTemplate("EEE")
-        let startDate = calendar.startOfDay(for: Date())
-
-        return templates.enumerated().map { index, template in
-            let dayTitle: String
-
-            if index == 0 {
-                dayTitle = NSLocalizedString("Сегодня", comment: "Today label in ten day forecast")
-            } else {
-                let date = calendar.date(byAdding: .day, value: index, to: startDate) ?? startDate
-                dayTitle = formatter.string(from: date).capitalized
-            }
-
-            return DailyWeather(
-                day: dayTitle,
-                icon: template.icon,
-                low: template.low,
-                high: template.high
-            )
+        
+        return templates.enumerated().map { index, item in
+            let day = index == 0
+                ? NSLocalizedString("Сегодня", comment: "")
+                : formatter.string(from: calendar.date(byAdding: .day, value: index, to: startDate)!).capitalized
+            
+            return Daily(day: day, icon: item.0, low: item.1, high: item.2)
         }
     }
 }
