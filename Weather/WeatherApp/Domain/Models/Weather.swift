@@ -7,8 +7,17 @@ struct Weather {
     let tempMax: Double
     let description: String
     let conditionCode: Int
+    let feelsLike: Double?
+    let humidity: Int?
+    let pressure: Int?
     let windSpeed: Double?
     let windDeg: Int?
+    let windGust: Double?
+    let sunrise: Date?
+    let sunset: Date?
+    let visibility: Int?
+    let uvIndex: Double?
+    let cloudiness: Int?
     let timezoneOffset: Int?
     let hourly: [Hourly]
     let daily: [Daily]
@@ -71,8 +80,17 @@ extension Weather {
             tempMax: 11,
             description: "В основном солнечно",
             conditionCode: 801,
+            feelsLike: 10,
+            humidity: 62,
+            pressure: 1018,
             windSpeed: 3.8,
             windDeg: 210,
+            windGust: 6.1,
+            sunrise: date(hour: 6, minute: 8, from: now),
+            sunset: date(hour: 19, minute: 16, from: now),
+            visibility: 10000,
+            uvIndex: 4.2,
+            cloudiness: 28,
             timezoneOffset: timezoneOffset,
             hourly: hourly,
             daily: daily
@@ -91,8 +109,17 @@ extension Weather {
             tempMax: today?.max ?? current.temp,
             description: current.weather.first?.description ?? "",
             conditionCode: currentCondition,
+            feelsLike: current.feelsLike,
+            humidity: current.humidity,
+            pressure: current.pressure,
             windSpeed: current.windSpeed,
             windDeg: current.windDeg,
+            windGust: current.windGust,
+            sunrise: current.sunrise.map(Date.init(timeIntervalSince1970:)),
+            sunset: current.sunset.map(Date.init(timeIntervalSince1970:)),
+            visibility: current.visibility,
+            uvIndex: current.uvIndex,
+            cloudiness: current.cloudiness,
             timezoneOffset: response.timezoneOffset,
             hourly: response.hourly.map {
                 Hourly(
@@ -110,5 +137,12 @@ extension Weather {
                 )
             }
         )
+    }
+
+    private static func date(hour: Int, minute: Int, from date: Date) -> Date? {
+        var components = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        components.hour = hour
+        components.minute = minute
+        return Calendar.current.date(from: components)
     }
 }
