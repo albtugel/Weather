@@ -12,7 +12,7 @@ final class DIContainer {
         LocationManager()
 
     lazy var getWeatherUseCase: GetWeatherUseCaseProtocol =
-        GetWeatherUseCase(repository: weatherRepository)
+        GetWeatherUseCase(apiClient: apiClient)
 
     lazy var cityStore = CityStore()
 

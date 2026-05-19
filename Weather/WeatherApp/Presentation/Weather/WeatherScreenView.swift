@@ -2,11 +2,12 @@ import UIKit
 import SnapKit
 
 final class WeatherScreenView: UIView {
-    let scrollView = UIScrollView()
+    let scrollView = WeatherScrollView()
 
     private let contentView = UIView()
     private let loadingView = UIView()
     private let loadingIndicator = UIActivityIndicatorView(style: .large)
+    private let errorLabel = UILabel()
     private let compactHeaderView = UIView()
     private let compactBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
     private let compactLocationLabel = UILabel()
@@ -19,6 +20,7 @@ final class WeatherScreenView: UIView {
     private let fullHeaderStack = UIStackView()
     private let hourlyCard = HourlyForecastCard()
     private let tenDayCard = TenDayForecastCard()
+    private let detailsGridView = UIStackView()
 
     private let locationIconView = UIImageView()
     private let locationTypeLabel = UILabel()
@@ -73,11 +75,16 @@ final class WeatherScreenView: UIView {
         showLoadingOverlay(false)
     }
 
+    func showError(_ message: String) {
+        errorLabel.text = message
+        showLoadingOverlay(true, message: message)
+    }
+
     func showFirstAppearance() {
         guard !didShowFirstAppearance else { return }
         didShowFirstAppearance = true
 
-        let views = [headerContainer, hourlyCard, tenDayCard]
+        let views = [headerContainer, hourlyCard, tenDayCard, detailsGridView]
         views.enumerated().forEach { index, view in
             view.alpha = 0
             view.transform = CGAffineTransform(translationX: 0, y: 26)
@@ -125,6 +132,13 @@ final class WeatherScreenView: UIView {
         loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
         loadingIndicator.color = .white
         loadingIndicator.hidesWhenStopped = true
+
+        errorLabel.translatesAutoresizingMaskIntoConstraints = false
+        errorLabel.font = .systemFont(ofSize: 16, weight: .medium)
+        errorLabel.textColor = .white
+        errorLabel.textAlignment = .center
+        errorLabel.numberOfLines = 0
+        errorLabel.isHidden = true
     }
 
     private func configureCompactHeader() {
@@ -156,6 +170,11 @@ final class WeatherScreenView: UIView {
         headerContainer.translatesAutoresizingMaskIntoConstraints = false
         hourlyCard.translatesAutoresizingMaskIntoConstraints = false
         tenDayCard.translatesAutoresizingMaskIntoConstraints = false
+        detailsGridView.translatesAutoresizingMaskIntoConstraints = false
+        detailsGridView.axis = .vertical
+        detailsGridView.spacing = 12
+        detailsGridView.alignment = .fill
+        detailsGridView.distribution = .fill
 
         locationIconView.translatesAutoresizingMaskIntoConstraints = false
         locationTypeLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -209,6 +228,7 @@ final class WeatherScreenView: UIView {
         addSubview(compactHeaderView)
         addSubview(loadingView)
         loadingView.addSubview(loadingIndicator)
+        loadingView.addSubview(errorLabel)
         compactHeaderView.addSubview(compactBlurView)
         compactHeaderView.addSubview(compactLocationLabel)
         compactHeaderView.addSubview(compactSummaryLabel)
@@ -229,6 +249,11 @@ final class WeatherScreenView: UIView {
 
         loadingIndicator.snp.makeConstraints { make in
             make.center.equalToSuperview()
+        }
+
+        errorLabel.snp.makeConstraints { make in
+            make.centerY.equalToSuperview()
+            make.leading.trailing.equalToSuperview().inset(32)
         }
     }
 
@@ -263,6 +288,7 @@ final class WeatherScreenView: UIView {
     private func layoutForecastSection() {
         contentView.addSubview(hourlyCard)
         contentView.addSubview(tenDayCard)
+        contentView.addSubview(detailsGridView)
 
         hourlyCard.snp.makeConstraints { make in
             make.top.equalTo(headerContainer.snp.bottom).offset(20)
@@ -274,6 +300,11 @@ final class WeatherScreenView: UIView {
             make.top.equalTo(hourlyCard.snp.bottom).offset(12)
             make.leading.trailing.equalToSuperview().inset(16)
             make.height.equalTo(TenDayForecastCard.preferredHeight)
+        }
+
+        detailsGridView.snp.makeConstraints { make in
+            make.top.equalTo(tenDayCard.snp.bottom).offset(12)
+            make.leading.trailing.equalToSuperview().inset(16)
             make.bottom.equalToSuperview().offset(-40)
         }
     }
@@ -363,17 +394,86 @@ final class WeatherScreenView: UIView {
     private func renderForecastContent(_ state: WeatherViewState) {
         hourlyCard.configure(with: state.hourlyItems, summary: state.forecastSummary)
         tenDayCard.configure(with: state.dailyItems)
+        renderDetails(state.detailItems)
     }
 
-    private func showLoadingOverlay(_ isLoading: Bool) {
+    private func renderDetails(_ items: [WeatherDetailItem]) {
+        detailsGridView.arrangedSubviews.forEach { view in
+            detailsGridView.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+
+        var pair: [WeatherDetailItem] = []
+
+        func addPair() {
+            guard !pair.isEmpty else { return }
+
+            let row = UIStackView()
+            row.axis = .horizontal
+            row.spacing = 12
+            row.alignment = .fill
+            row.distribution = .fillEqually
+
+            pair.forEach { item in
+                let card = WeatherDetailCard()
+                card.configure(with: item)
+                row.addArrangedSubview(card)
+            }
+
+            if row.arrangedSubviews.count == 1 {
+                row.addArrangedSubview(UIView())
+            }
+
+            detailsGridView.addArrangedSubview(row)
+            row.snp.makeConstraints { make in
+                make.height.equalTo(detailsGridView.snp.width).multipliedBy(0.5).offset(-6)
+            }
+            pair.removeAll()
+        }
+
+        items.forEach { item in
+            if item.kind == .wind {
+                addPair()
+                let card = WeatherDetailCard()
+                card.configure(with: item)
+                detailsGridView.addArrangedSubview(card)
+                card.snp.makeConstraints { make in
+                    make.height.equalTo(detailsGridView.snp.width).multipliedBy(0.5).offset(-6)
+                }
+                return
+            }
+
+            pair.append(item)
+            if pair.count == 2 {
+                addPair()
+            }
+        }
+
+        addPair()
+    }
+
+    private func showLoadingOverlay(_ isLoading: Bool, message: String? = nil) {
         loadingView.isHidden = !isLoading
         scrollView.isHidden = isLoading
         compactHeaderView.isHidden = isLoading
+        errorLabel.text = message
+        errorLabel.isHidden = message == nil
 
-        if isLoading {
+        if isLoading, message == nil {
             loadingIndicator.startAnimating()
         } else {
             loadingIndicator.stopAnimating()
         }
+    }
+}
+
+final class WeatherScrollView: UIScrollView {
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard gestureRecognizer == panGestureRecognizer else {
+            return super.gestureRecognizerShouldBegin(gestureRecognizer)
+        }
+
+        let velocity = panGestureRecognizer.velocity(in: self)
+        return abs(velocity.y) >= abs(velocity.x)
     }
 }
