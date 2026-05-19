@@ -13,6 +13,7 @@ final class WeatherViewModel {
     private var latestWeather: Weather?
     private var latestViewState: WeatherViewState?
     private var locationText = "ТЕКУЩЕЕ МЕСТО"
+    private var cityName: String?
     private var followsCurrentLocation = true
     private var isFetching = false
 
@@ -29,6 +30,7 @@ final class WeatherViewModel {
     }
 
     func viewDidLoad() {
+        cityName = nil
         setLoadingIfNeeded()
         locationManager.requestLocation()
     }
@@ -42,6 +44,7 @@ final class WeatherViewModel {
     func loadCity(_ city: City) {
         followsCurrentLocation = city.isCurrent
         locationText = city.isCurrent ? "ТЕКУЩЕЕ МЕСТО" : "СОХРАНЕННЫЙ ГОРОД"
+        cityName = city.isCurrent ? nil : city.name
         lastLocation = CLLocation(latitude: city.lat, longitude: city.lon)
         startFetching(lat: city.lat, lon: city.lon, forceRefresh: true)
     }
@@ -83,6 +86,7 @@ final class WeatherViewModel {
             guard shouldFetchWeather(for: location) else { return }
             lastLocation = location
             locationText = "ТЕКУЩЕЕ МЕСТО"
+            cityName = nil
             startFetching(
                 lat: location.coordinate.latitude,
                 lon: location.coordinate.longitude,
@@ -154,7 +158,7 @@ final class WeatherViewModel {
 
     private func makeHeaderState(weather: Weather?, current: MockWeatherData.Current) -> HeaderState {
         let unit = AppSettings.shared.temperatureUnit
-        let cityName = weather?.cityName ?? current.cityName
+        let cityName = cityName ?? weather?.cityName ?? current.cityName
         let conditionText = weather?.description ?? current.description
         let temperatureText = formattedTemperature(weather?.temperature, fallback: current.temperature, unit: unit)
         let high = formattedTemperature(weather?.tempMax, fallback: current.high, unit: unit)

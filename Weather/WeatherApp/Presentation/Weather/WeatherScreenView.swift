@@ -2,7 +2,7 @@ import UIKit
 import SnapKit
 
 final class WeatherScreenView: UIView {
-    let scrollView = UIScrollView()
+    let scrollView = WeatherScrollView()
 
     private let contentView = UIView()
     private let loadingView = UIView()
@@ -464,5 +464,16 @@ final class WeatherScreenView: UIView {
         } else {
             loadingIndicator.stopAnimating()
         }
+    }
+}
+
+final class WeatherScrollView: UIScrollView {
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard gestureRecognizer == panGestureRecognizer else {
+            return super.gestureRecognizerShouldBegin(gestureRecognizer)
+        }
+
+        let velocity = panGestureRecognizer.velocity(in: self)
+        return abs(velocity.y) >= abs(velocity.x)
     }
 }
