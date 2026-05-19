@@ -118,9 +118,8 @@ final class WeatherViewModel {
         } catch {
             await MainActor.run {
                 self.isFetching = false
-                if let latestViewState {
-                    self.screenState.send(.content(latestViewState))
-                }
+                let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                self.screenState.send(.error(message))
             }
         }
     }
@@ -147,8 +146,8 @@ final class WeatherViewModel {
             highLowText: headerState.highLowText,
             compactSummaryText: headerState.compactSummaryText,
             forecastSummary: current.forecastSummary,
-            hourlyItems: MockWeatherData.hourly,
-            dailyItems: MockWeatherData.daily
+            hourlyItems: hourlyItems(from: weather),
+            dailyItems: dailyItems(from: weather)
         )
     }
 
@@ -186,9 +185,19 @@ final class WeatherViewModel {
             description: weather.description,
             high: Int(weather.tempMax.rounded()),
             low: Int(weather.tempMin.rounded()),
-            conditionCode: MockWeatherData.current.conditionCode,
+            conditionCode: weather.conditionCode,
             forecastSummary: MockWeatherData.current.forecastSummary
         )
+    }
+
+    private func hourlyItems(from weather: Weather?) -> [MockWeatherData.HourlyWeather] {
+        guard let weather else { return MockWeatherData.hourly }
+        return MockWeatherData.hourly(from: weather.hourly, timezoneOffset: weather.timezoneOffset)
+    }
+
+    private func dailyItems(from weather: Weather?) -> [MockWeatherData.DailyWeather] {
+        guard let weather else { return MockWeatherData.daily }
+        return MockWeatherData.daily(from: weather.daily, timezoneOffset: weather.timezoneOffset)
     }
 
     private func setLoadingIfNeeded() {

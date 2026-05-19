@@ -7,6 +7,7 @@ final class WeatherScreenView: UIView {
     private let contentView = UIView()
     private let loadingView = UIView()
     private let loadingIndicator = UIActivityIndicatorView(style: .large)
+    private let errorLabel = UILabel()
     private let compactHeaderView = UIView()
     private let compactBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
     private let compactLocationLabel = UILabel()
@@ -73,6 +74,11 @@ final class WeatherScreenView: UIView {
         showLoadingOverlay(false)
     }
 
+    func showError(_ message: String) {
+        errorLabel.text = message
+        showLoadingOverlay(true, message: message)
+    }
+
     func showFirstAppearance() {
         guard !didShowFirstAppearance else { return }
         didShowFirstAppearance = true
@@ -125,6 +131,13 @@ final class WeatherScreenView: UIView {
         loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
         loadingIndicator.color = .white
         loadingIndicator.hidesWhenStopped = true
+
+        errorLabel.translatesAutoresizingMaskIntoConstraints = false
+        errorLabel.font = .systemFont(ofSize: 16, weight: .medium)
+        errorLabel.textColor = .white
+        errorLabel.textAlignment = .center
+        errorLabel.numberOfLines = 0
+        errorLabel.isHidden = true
     }
 
     private func configureCompactHeader() {
@@ -209,6 +222,7 @@ final class WeatherScreenView: UIView {
         addSubview(compactHeaderView)
         addSubview(loadingView)
         loadingView.addSubview(loadingIndicator)
+        loadingView.addSubview(errorLabel)
         compactHeaderView.addSubview(compactBlurView)
         compactHeaderView.addSubview(compactLocationLabel)
         compactHeaderView.addSubview(compactSummaryLabel)
@@ -229,6 +243,11 @@ final class WeatherScreenView: UIView {
 
         loadingIndicator.snp.makeConstraints { make in
             make.center.equalToSuperview()
+        }
+
+        errorLabel.snp.makeConstraints { make in
+            make.centerY.equalToSuperview()
+            make.leading.trailing.equalToSuperview().inset(32)
         }
     }
 
@@ -365,12 +384,14 @@ final class WeatherScreenView: UIView {
         tenDayCard.configure(with: state.dailyItems)
     }
 
-    private func showLoadingOverlay(_ isLoading: Bool) {
+    private func showLoadingOverlay(_ isLoading: Bool, message: String? = nil) {
         loadingView.isHidden = !isLoading
         scrollView.isHidden = isLoading
         compactHeaderView.isHidden = isLoading
+        errorLabel.text = message
+        errorLabel.isHidden = message == nil
 
-        if isLoading {
+        if isLoading, message == nil {
             loadingIndicator.startAnimating()
         } else {
             loadingIndicator.stopAnimating()

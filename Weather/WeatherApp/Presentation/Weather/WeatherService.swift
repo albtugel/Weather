@@ -5,7 +5,7 @@ final class WeatherService {
     static let shared = WeatherService()
     private let api: APIClientProtocol
     
-    private init(api: APIClientProtocol = APIClient()) {
+    init(api: APIClientProtocol = APIClient()) {
         self.api = api
     }
     
