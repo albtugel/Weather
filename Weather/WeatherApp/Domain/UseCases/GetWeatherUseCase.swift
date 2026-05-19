@@ -1,11 +1,9 @@
 final class GetWeatherUseCase: GetWeatherUseCaseProtocol {
-    private let repository: WeatherRepositoryProtocol
-
-    init(repository: WeatherRepositoryProtocol) {
-        self.repository = repository
-    }
-
+    
+    private let weatherService = WeatherService.shared
+    
     func execute(lat: Double, lon: Double) async throws -> Weather {
-        try await repository.fetchWeather(lat: lat, lon: lon)
+        let response = try await weatherService.oneCall(lat: lat, lon: lon)
+        return Weather(from: response)
     }
 }

@@ -1,104 +1,86 @@
 import Foundation
 
 struct MockWeatherData {
-    
     struct Current {
-        let city: String
+        let cityName: String
         let locationType: String
-        let temp: Int
-        let desc: String
+        let temperature: Int
+        let description: String
         let high: Int
         let low: Int
         let conditionCode: Int
-        let summary: String
+        let forecastSummary: String
     }
-    
-    struct Hourly {
+
+    struct HourlyWeather {
         let label: String
         let temp: Int?
         let icon: String
         let isSunset: Bool
     }
-    
-    struct Daily {
+
+    struct DailyWeather {
         let day: String
         let icon: String
         let low: Int
         let high: Int
     }
-    
-    struct City {
-        let name: String
-        let type: String?
-        let time: String?
-        let condition: String
-        let high: Int
-        let low: Int
-        let temp: Int
-    }
-    
+
     static let current = Current(
-        city: "Алматы",
+        cityName: "Алматы",
         locationType: "ТЕКУЩЕЕ МЕСТО",
-        temp: 11,
-        desc: "В основном солнечно",
+        temperature: 11,
+        description: "В основном солнечно",
         high: 11,
         low: 5,
         conditionCode: 801,
-        summary: "Солнечно до конца дня."
+        forecastSummary: "Солнечно до конца дня."
     )
-    
-    static let hourly: [Hourly] = makeHourly()
-    static let daily: [Daily] = makeDaily()
-    
-    static let cities: [City] = [
-        City(name: "Алматы", type: "Текущее место", time: nil,
-             condition: "В основном солнечно", high: 11, low: 5, temp: 11),
-        
-        City(name: "Астана", type: nil, time: currentTime(),
-             condition: "В основном облачно", high: -10, low: -22, temp: -10),
-        
-        City(name: "Алматы", type: nil, time: currentTime(),
-             condition: "В основном солнечно", high: 22, low: 8, temp: 22)
-    ]
-    
+
+    static let hourly: [HourlyWeather] = makeHourly()
+    static let daily: [DailyWeather] = makeDaily()
+
     private static func currentTime() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         return formatter.string(from: Date())
     }
-    
-    private static func makeHourly() -> [Hourly] {
+
+    private static func makeHourly() -> [HourlyWeather] {
         let now = Date()
         let calendar = Calendar.current
-        
-        var items: [Hourly] = [
-            Hourly(label: "Сейчас", temp: 11, icon: "sun.max.fill", isSunset: false)
+
+        var items: [HourlyWeather] = [
+            HourlyWeather(label: "Сейчас", temp: 11, icon: "sun.max.fill", isSunset: false)
         ]
-        
+
         for hour in 1...15 {
             let date = calendar.date(byAdding: .hour, value: hour, to: now) ?? now
             let hourString = String(calendar.component(.hour, from: date))
-            
-            items.append(Hourly(
-                label: hourString,
-                temp: 10 - hour/3,
-                icon: hour >= 18 ? "moon.fill" : "sun.max.fill",
-                isSunset: false
-            ))
+            items.append(
+                HourlyWeather(
+                    label: hourString,
+                    temp: 10 - hour/3,
+                    icon: hour >= 18 ? "moon.fill" : "sun.max.fill",
+                    isSunset: false
+                )
+            )
         }
-        
-        items.insert(Hourly(label: "17:29", temp: nil, icon: "sunset.fill", isSunset: true), at: 3)
-        
+
+        items.insert(
+            HourlyWeather(label: "17:29", temp: nil, icon: "sunset.fill", isSunset: true),
+            at: 3
+        )
+
         return items
     }
-    
-    private static func makeDaily() -> [Daily] {
+
+    private static func makeDaily() -> [DailyWeather] {
         let calendar = Calendar.current
         let formatter = DateFormatter()
         formatter.locale = .autoupdatingCurrent
         formatter.setLocalizedDateFormatFromTemplate("EEE")
-        
+
         let startDate = calendar.startOfDay(for: Date())
         let templates = [
             ("sun.max.fill", 5, 11),
@@ -112,13 +94,12 @@ struct MockWeatherData {
             ("cloud.fill", -3, 2),
             ("sun.max.fill", -2, 2)
         ]
-        
+
         return templates.enumerated().map { index, item in
             let day = index == 0
                 ? NSLocalizedString("Сегодня", comment: "")
                 : formatter.string(from: calendar.date(byAdding: .day, value: index, to: startDate)!).capitalized
-            
-            return Daily(day: day, icon: item.0, low: item.1, high: item.2)
+            return DailyWeather(day: day, icon: item.0, low: item.1, high: item.2)
         }
     }
 }
