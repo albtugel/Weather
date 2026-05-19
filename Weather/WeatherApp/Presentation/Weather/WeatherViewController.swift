@@ -91,6 +91,9 @@ final class WeatherViewController: UIViewController {
             screenView.showFirstAppearance()
         case let .refreshing(viewState):
             screenView.showRefreshing(viewState)
+        case let .error(message):
+            refreshControl.endRefreshing()
+            screenView.showError(message)
         }
     }
 }

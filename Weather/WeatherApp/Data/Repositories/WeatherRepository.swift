@@ -14,7 +14,13 @@ final class WeatherRepository: WeatherRepositoryProtocol {
             temperature: dto.main.temp,
             tempMin: dto.main.tempMin,
             tempMax: dto.main.tempMax,
-            description: dto.weather.first?.description ?? ""
+            description: dto.weather.first?.description ?? "",
+            conditionCode: dto.weather.first?.id ?? 800,
+            windSpeed: dto.wind?.speed,
+            windDeg: dto.wind?.deg,
+            timezoneOffset: nil,
+            hourly: [],
+            daily: []
         )
     }
 }
@@ -23,6 +29,7 @@ struct WeatherResponseDTO: Decodable {
     let name: String
     let main: Main
     let weather: [WeatherElement]
+    let wind: Wind?
 
     struct Main: Decodable {
         let temp: Double
@@ -44,6 +51,12 @@ struct WeatherResponseDTO: Decodable {
     }
 
     struct WeatherElement: Decodable {
+        let id: Int?
         let description: String
+    }
+
+    struct Wind: Decodable {
+        let speed: Double?
+        let deg: Int?
     }
 }
